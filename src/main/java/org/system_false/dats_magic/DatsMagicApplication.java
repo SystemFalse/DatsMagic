@@ -7,8 +7,10 @@ import javafx.stage.Stage;
 
 public class DatsMagicApplication extends Application {
 
-    public static void main(String[] args) {
-        launch(args);
+    public static void main(String[] args) throws Exception {
+        RequestManager.setToken(args[0]);
+        RequestManager.setServer(args[1]);
+        launch();
     }
 
     @Override
