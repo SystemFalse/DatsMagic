@@ -2,34 +2,29 @@ package org.system_false.dats_magic;
 
 import com.google.gson.JsonElement;
 
-import java.net.URL;
-
 public class Request {
-    private final URL url;
+    private final String url;
     private final String requestMethod;
-    private final String authToken;
-    private JsonElement body;
+    private final boolean useAuth;
+    private final JsonElement body;
 
-    public Request(URL url, String requestMethod, String authToken) {
+    public Request(String url, String requestMethod, boolean useAuth, JsonElement body) {
         this.url = url;
         this.requestMethod = requestMethod;
-        this.authToken = authToken;
+        this.useAuth = useAuth;
+        this.body = body;
     }
 
-    public URL getUrl() {
+    public String getUrl() {
         return url;
+    }
+
+    public boolean useAuth() {
+        return useAuth;
     }
 
     public String getRequestMethod() {
         return requestMethod;
-    }
-
-    public String getAuthToken() {
-        return authToken;
-    }
-
-    public void setBody(JsonElement body) {
-        this.body = body;
     }
 
     public String getBody() {

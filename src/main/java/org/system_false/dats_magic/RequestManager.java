@@ -2,12 +2,21 @@ package org.system_false.dats_magic;
 
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
+import com.google.gson.JsonObject;
+import javafx.geometry.Point2D;
+import org.system_false.dats_magic.json.Point2DAdapter;
 
 import java.io.*;
-import java.net.*;
+import java.net.HttpURLConnection;
+import java.net.URI;
+import java.net.URISyntaxException;
 import java.nio.charset.StandardCharsets;
-import java.util.concurrent.*;
+import java.util.concurrent.Executors;
+import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.ScheduledFuture;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
+import java.util.function.Consumer;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import java.util.stream.Collectors;
@@ -19,26 +28,28 @@ public class RequestManager {
     static {
         gson = new GsonBuilder()
                 .setPrettyPrinting()
+                .registerTypeAdapter(Point2D.class, new Point2DAdapter())
                 .create();
         logger = Logger.getLogger("RequestManager");
+        logger.setLevel(Level.INFO);
     }
 
-    private static URL serverUrl;
+    private static String serverUrl;
     private static String token;
 
     private static final AtomicReference<Request> requestReference = new AtomicReference<>();
-    private static final AtomicReference<Exchanger<Response>> callbackReference = new AtomicReference<>();
+    private static final AtomicReference<Consumer<Response>> callbackReference = new AtomicReference<>();
 
     private static final ScheduledExecutorService scheduler = Executors.newSingleThreadScheduledExecutor();
     private static ScheduledFuture<?> task;
 
-    private static long rate;
-    private static TimeUnit unit;
+    private static long rate = 1;
+    private static TimeUnit unit = TimeUnit.SECONDS;
 
     private RequestManager() {}
 
-    public static void setServer(String server) throws URISyntaxException, MalformedURLException {
-        RequestManager.serverUrl = new URI(server).toURL();
+    public static void setServer(String server) {
+        RequestManager.serverUrl = server;
     }
 
     public static void setToken(String token) {
@@ -50,18 +61,17 @@ public class RequestManager {
             task.cancel(false);
         }
         task = scheduler.scheduleAtFixedRate(() -> {
-            Request request = requestReference.getAcquire();
-            Exchanger<Response> callback = callbackReference.getAcquire();
+            Request request = requestReference.get();
+            Consumer<Response> callback = callbackReference.get();
 
             if (request != null && callback != null) {
+                requestReference.set(null);
+                callbackReference.set(null);
                 try {
                     Response response = sendRequest(request);
-                    callback.exchange(response);
+                    callback.accept(response);
                 } catch (Exception e) {
                     logger.log(Level.WARNING, "Failed to send request", e);
-                } finally {
-                    requestReference.setRelease(null);
-                    callbackReference.setRelease(null);
                 }
             }
         }, 0, rate, unit);
@@ -71,30 +81,39 @@ public class RequestManager {
 
     public static void stop() {
         if (task != null) {
-            task.cancel(false);
+            task.cancel(true);
             task = null;
         }
     }
 
-    public static synchronized void enqueueRequest(Request request, Exchanger<Response> callback) {
-        requestReference.setRelease(request);
-        callbackReference.setRelease(callback);
+    public static synchronized void enqueueRequest(Request request, Consumer<Response> callback) {
+        requestReference.set(request);
+        callbackReference.set(callback);
     }
 
-    public static Response sendRequest(Request request) throws IOException {
-        HttpURLConnection con = (HttpURLConnection) serverUrl.openConnection();
-        con.setRequestMethod(request.getRequestMethod());
-        con.setRequestProperty("X-Auth-Token", token);
-        con.setRequestProperty("Content-Type", "application/json");
-        con.setReadTimeout((int) unit.toMillis(rate));
-        try (BufferedWriter out = new BufferedWriter(new OutputStreamWriter(con.getOutputStream(), StandardCharsets.UTF_8))) {
-            out.write(request.getBody());
-        }
-        if (con.getResponseCode() != 200) {
-            throw new ErrorCodeException(con.getResponseCode());
-        }
+    public static Response sendRequest(Request request) throws IOException, URISyntaxException {
+        URI uri = new URI(serverUrl + request.getUrl());
+        logger.log(Level.FINER, "Sending request to {0} with method {1}", new String[]{uri.toASCIIString(), request.getRequestMethod()});
+        HttpURLConnection con = prepareConnection(request, uri);
         try (BufferedReader in = new BufferedReader(new InputStreamReader(con.getInputStream(), StandardCharsets.UTF_8))) {
-            return new Response(in.lines().collect(Collectors.joining()));
+            return new Response(gson.fromJson(in.lines().collect(Collectors.joining()), JsonObject.class));
         }
+    }
+
+    private static HttpURLConnection prepareConnection(Request request, URI uri) throws IOException {
+        HttpURLConnection con = (HttpURLConnection) uri.toURL().openConnection();
+        con.setDoInput(true);
+        con.setDoOutput(true);
+        con.setRequestMethod(request.getRequestMethod());
+        con.setRequestProperty("Content-Type", "application/json");
+        if (request.useAuth()) {
+            con.setRequestProperty("X-Auth-Token", token);
+        }
+        if (request.getBody() != null) {
+            try (BufferedWriter out = new BufferedWriter(new OutputStreamWriter(con.getOutputStream(), StandardCharsets.UTF_8))) {
+                out.write(request.getBody());
+            }
+        }
+        return con;
     }
 }

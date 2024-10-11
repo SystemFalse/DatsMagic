@@ -3,10 +3,10 @@ package org.system_false.dats_magic;
 import com.google.gson.JsonElement;
 
 public class Response {
-    private JsonElement body;
+    private final JsonElement body;
 
-    public Response(String response) {
-        body = RequestManager.gson.toJsonTree(response);
+    public Response(JsonElement response) {
+        body = response;
     }
 
     public JsonElement getBody() {
