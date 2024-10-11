@@ -1,14 +1,14 @@
 package org.system_false.dats_magic.json;
 
 import com.google.gson.*;
+import javafx.geometry.Point2D;
 
-import java.awt.geom.Point2D;
 import java.lang.reflect.Type;
 
 public class Point2DAdapter implements JsonDeserializer<Point2D>, JsonSerializer<Point2D> {
     @Override
     public Point2D deserialize(JsonElement jsonElement, Type type, JsonDeserializationContext jsonDeserializationContext) throws JsonParseException {
-        return new Point2D.Double(jsonElement.getAsJsonObject().get("x").getAsDouble(), jsonElement.getAsJsonObject().get("y").getAsDouble());
+        return new Point2D(jsonElement.getAsJsonObject().get("x").getAsDouble(), jsonElement.getAsJsonObject().get("y").getAsDouble());
     }
 
     @Override
