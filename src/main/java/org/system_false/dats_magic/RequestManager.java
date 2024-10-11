@@ -90,6 +90,9 @@ public class RequestManager {
         try (BufferedWriter out = new BufferedWriter(new OutputStreamWriter(con.getOutputStream(), StandardCharsets.UTF_8))) {
             out.write(request.getBody());
         }
+        if (con.getResponseCode() != 200) {
+            throw new ErrorCodeException(con.getResponseCode());
+        }
         try (BufferedReader in = new BufferedReader(new InputStreamReader(con.getInputStream(), StandardCharsets.UTF_8))) {
             return new Response(in.lines().collect(Collectors.joining()));
         }
