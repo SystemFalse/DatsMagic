@@ -21,34 +21,10 @@ public class MoveResponse {
     private int shieldCooldownMs;
     private int shieldTimeMs;
     private int transportRadius;
-    private List<Transport> transports;
+    private List<ResponseTransport> transports;
     private List<Enemy> wantedList;
 
     private MoveResponse() {}
-
-    public MoveResponse(List<Anomaly> anomalies, int attackCooldownMs, int attackDamage, double attackExplosionRadius,
-                        double attackRange, List<Bounty> bounties, List<Enemy> enemies, Point2D mapSize, double maxAccel,
-                        double maxSpeed, String name, int points, int reviveTimeoutSec, int shieldCooldownMs,
-                        int shieldTimeMs, int transportRadius, List<Transport> transports, List<Enemy> wantedList) {
-        this.anomalies = anomalies;
-        this.attackCooldownMs = attackCooldownMs;
-        this.attackDamage = attackDamage;
-        this.attackExplosionRadius = attackExplosionRadius;
-        this.attackRange = attackRange;
-        this.bounties = bounties;
-        this.enemies = enemies;
-        this.mapSize = mapSize;
-        this.maxAccel = maxAccel;
-        this.maxSpeed = maxSpeed;
-        this.name = name;
-        this.points = points;
-        this.reviveTimeoutSec = reviveTimeoutSec;
-        this.shieldCooldownMs = shieldCooldownMs;
-        this.shieldTimeMs = shieldTimeMs;
-        this.transportRadius = transportRadius;
-        this.transports = transports;
-        this.wantedList = wantedList;
-    }
 
     public List<Anomaly> getAnomalies() {
         return anomalies;
@@ -114,7 +90,7 @@ public class MoveResponse {
         return transportRadius;
     }
 
-    public List<Transport> getTransports() {
+    public List<ResponseTransport> getTransports() {
         return transports;
     }
 

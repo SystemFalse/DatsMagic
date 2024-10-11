@@ -3,10 +3,16 @@ package org.system_false.dats_magic;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import javafx.application.Platform;
+import javafx.event.ActionEvent;
 import javafx.fxml.FXML;
 import javafx.fxml.Initializable;
+import javafx.geometry.Dimension2D;
+import javafx.scene.canvas.Canvas;
+import javafx.scene.control.CheckBox;
 import javafx.scene.control.Label;
-import javafx.stage.Stage;
+import javafx.scene.control.ScrollPane;
+import javafx.scene.control.Slider;
+import javafx.scene.layout.VBox;
 import org.system_false.dats_magic.json.GameRoundsResponse;
 import org.system_false.dats_magic.json.MoveResponse;
 import org.system_false.dats_magic.json.Round;
@@ -14,7 +20,6 @@ import org.system_false.dats_magic.json.Round;
 import java.net.URL;
 import java.text.DateFormat;
 import java.time.ZoneId;
-import java.util.Date;
 import java.util.ResourceBundle;
 import java.util.TimeZone;
 import java.util.concurrent.Executors;
@@ -25,29 +30,30 @@ import java.util.logging.Level;
 public class DatsMagicController implements Initializable {
     private final ScheduledExecutorService scheduler = Executors.newSingleThreadScheduledExecutor();
 
-    @FXML Label roundStartLabel;
-    @FXML Label roundEndLabel;
-    @FXML Label nameLabel;
-    @FXML Label pointsLabel;
-    @FXML Label attackDamageLabel;
-    @FXML Label attackCooldownLabel;
-    @FXML Label attackExplosionRadiusLabel;
-    @FXML Label attackRangeLabel;
-    @FXML Label maxAccelLabel;
-    @FXML Label maxSpeedLabel;
-    @FXML Label reviveTimeoutSecLabel;
-    @FXML Label shieldCooldownMsLabel;
-    @FXML Label shieldTimeMsLabel;
-    @FXML Label transportRadiusLabel;
-    @FXML Label wantedListLabel;
+    @FXML private VBox  info;
+    @FXML private Label roundStartLabel;
+    @FXML private Label roundEndLabel;
+    @FXML private Label nameLabel;
+    @FXML private Label pointsLabel;
+    @FXML private Label attackDamageLabel;
+    @FXML private Label attackCooldownLabel;
+    @FXML private Label attackExplosionRadiusLabel;
+    @FXML private Label attackRangeLabel;
+    @FXML private Label maxAccelLabel;
+    @FXML private Label maxSpeedLabel;
+    @FXML private Label reviveTimeoutSecLabel;
+    @FXML private Label shieldCooldownMsLabel;
+    @FXML private Label shieldTimeMsLabel;
+    @FXML private Label transportRadiusLabel;
+    @FXML private Label wantedListLabel;
+
+    @FXML private Slider mapScale;
+    @FXML private CheckBox centerCheck;
+    @FXML private ScrollPane mapView;
+    @FXML private Canvas map;
 
     private GameRoundsResponse gameRounds;
-    private GameLoop game;
-    private Stage stage;
-
-    public void setStage(Stage stage) {
-        this.stage = stage;
-    }
+    private GamePlay game;
 
     private void updateUI() {
         MoveResponse resp = game.getLastResponse();
@@ -74,10 +80,17 @@ public class DatsMagicController implements Initializable {
         wantedListLabel.setText(String.valueOf(resp.getWantedList().size()));
     }
 
+    public Dimension2D getMinSize() {
+        return new Dimension2D(info.getMinWidth() + mapView.getMinWidth() + 20, mapView.getMinHeight() + 64);
+    }
+
     @Override
     public void initialize(URL url, ResourceBundle resourceBundle) {
-        game = new GameLoop();
-        RequestManager.enqueueRequest(GameLoop.EMPTY_REQUEST, game);
+        game = new GamePlay(map);
+        game.getDraw().getScaleProperty().bind(mapScale.valueProperty().subtract(mapScale.minProperty())
+                .divide(mapScale.maxProperty().subtract(mapScale.minProperty())));
+        game.getDraw().getCenterProperty().bind(centerCheck.selectedProperty());
+        RequestManager.enqueueRequest(GamePlay.EMPTY_REQUEST, game);
         Request gameRequest = new Request("rounds/magcarp", "GET", false, null);
         scheduler.scheduleAtFixedRate(() -> {
             Response response;
@@ -90,29 +103,17 @@ public class DatsMagicController implements Initializable {
             JsonElement body = response.getBody();
             JsonObject root = body.getAsJsonObject();
             if (root.has("error")) {
-                System.out.println(root.get("error").getAsString());
+                RequestManager.logger.log(Level.WARNING, "Error {0}: {1}",
+                        new String[]{root.get("errCode").getAsString(), root.get("error").getAsString()});
                 return;
             }
             gameRounds = RequestManager.gson.fromJson(root, GameRoundsResponse.class);
             Platform.runLater(this::updateUI);
-            Platform.runLater(() -> {
-                if (stage != null) {
-                    Date now = new Date();
-                    var rounds = gameRounds.getRounds();
-                    Round current = null;
-                    for (Round round : rounds) {
-                        if (round.getStartAt().after(now) && now.before(round.getEndAt())) {
-                            current = round;
-                            break;
-                        }
-                    }
-                    if (current != null) {
-                        stage.setTitle("DatsMagic - Игра \"%s\", Раунд \"%s\"".formatted(gameRounds.getGameName(),
-                                current.getName()));
-                    }
-                }
-            });
         }, 0, 1, TimeUnit.SECONDS);
         RequestManager.start(1, TimeUnit.SECONDS);
+    }
+
+    public void autoCenter(ActionEvent event) {
+        mapScale.setDisable(centerCheck.isSelected());
     }
 }

@@ -10,12 +10,6 @@ public class GameRoundsResponse {
 
     private GameRoundsResponse() {}
 
-    public GameRoundsResponse(String gameName, String now, List<Round> rounds) {
-        this.gameName = gameName;
-        this.now = now;
-        this.rounds = rounds;
-    }
-
     public String getGameName() {
         return gameName;
     }

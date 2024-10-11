@@ -7,14 +7,14 @@ import java.util.ArrayList;
 import java.util.List;
 
 public class MoveRequest {
-    private final List<Transport> transports = new ArrayList<>();
+    private final List<RequestTransport> requestTransports = new ArrayList<>();
 
-    public void addTransport(Transport transport) {
-        transports.add(transport);
+    public void addTransport(RequestTransport requestTransport) {
+        requestTransports.add(requestTransport);
     }
 
-    public List<Transport> getTransports() {
-        return transports;
+    public List<RequestTransport> getTransports() {
+        return requestTransports;
     }
 
     public JsonElement toJson(Gson gson) {

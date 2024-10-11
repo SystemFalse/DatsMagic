@@ -2,6 +2,7 @@ package org.system_false.dats_magic;
 
 import javafx.application.Application;
 import javafx.fxml.FXMLLoader;
+import javafx.geometry.Dimension2D;
 import javafx.scene.Scene;
 import javafx.stage.Stage;
 
@@ -11,12 +12,12 @@ public class DatsMagicApplication extends Application {
     @Override
     public void start(Stage stage) throws IOException {
         stage.setTitle("DatsMagic");
-        stage.setWidth(800);
-        stage.setHeight(600);
         FXMLLoader loader = new FXMLLoader(getClass().getResource("game-view.fxml"));
         stage.setScene(new Scene(loader.load()));
         DatsMagicController controller = loader.getController();
-        controller.setStage(stage);
+        Dimension2D minSize = controller.getMinSize();
+        stage.setMinWidth(minSize.getWidth());
+        stage.setMinHeight(minSize.getHeight());
         stage.show();
     }
 

@@ -2,15 +2,15 @@ package org.system_false.dats_magic.json;
 
 import javafx.geometry.Point2D;
 
-public class Transport {
+public class RequestTransport {
     private Point2D acceleration;
     private boolean activateShield;
     private Point2D attack;
     private String id;
 
-    private Transport() {}
+    private RequestTransport() {}
 
-    public Transport(Point2D acceleration, boolean activateShield, Point2D attack, String id) {
+    public RequestTransport(Point2D acceleration, boolean activateShield, Point2D attack, String id) {
         this.acceleration = acceleration;
         this.activateShield = activateShield;
         this.attack = attack;
