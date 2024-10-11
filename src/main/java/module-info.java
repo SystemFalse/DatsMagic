@@ -4,6 +4,7 @@ module dats_magic {
     requires javafx.controls;
     requires javafx.fxml;
     requires java.logging;
+    requires jdk.localedata;
 
     exports org.system_false.dats_magic;
     exports org.system_false.dats_magic.json;

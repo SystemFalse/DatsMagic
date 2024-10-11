@@ -1,5 +1,6 @@
 package org.system_false.dats_magic.json;
 
+import java.util.Date;
 import java.util.List;
 
 public class GameRoundsResponse {
@@ -25,5 +26,15 @@ public class GameRoundsResponse {
 
     public List<Round> getRounds() {
         return rounds;
+    }
+
+    public Round getCurrentRound() {
+        Date now = new Date();
+        for (Round round : rounds) {
+            if (round.getStartAt().after(now) && now.before(round.getEndAt())) {
+                return round;
+            }
+        }
+        return null;
     }
 }

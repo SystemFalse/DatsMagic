@@ -12,8 +12,11 @@ import org.system_false.dats_magic.json.MoveResponse;
 import org.system_false.dats_magic.json.Round;
 
 import java.net.URL;
+import java.text.DateFormat;
+import java.time.ZoneId;
 import java.util.Date;
 import java.util.ResourceBundle;
+import java.util.TimeZone;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
@@ -22,6 +25,8 @@ import java.util.logging.Level;
 public class DatsMagicController implements Initializable {
     private final ScheduledExecutorService scheduler = Executors.newSingleThreadScheduledExecutor();
 
+    @FXML Label roundStartLabel;
+    @FXML Label roundEndLabel;
     @FXML Label nameLabel;
     @FXML Label pointsLabel;
     @FXML Label attackDamageLabel;
@@ -46,6 +51,14 @@ public class DatsMagicController implements Initializable {
 
     private void updateUI() {
         MoveResponse resp = game.getLastResponse();
+        Round currentRound = gameRounds.getCurrentRound();
+        DateFormat dateFormat = DateFormat.getTimeInstance(DateFormat.SHORT);
+        dateFormat.setTimeZone(TimeZone.getTimeZone(ZoneId.of("Europe/Kaliningrad")));
+        roundStartLabel.setText(dateFormat.format(currentRound.getStartAt()));
+        roundEndLabel.setText(dateFormat.format(currentRound.getEndAt()));
+        if (resp == null) {
+            return;
+        }
         nameLabel.setText(resp.getName());
         pointsLabel.setText(String.valueOf(resp.getPoints()));
         attackDamageLabel.setText(String.valueOf(resp.getAttackDamage()));

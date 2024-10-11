@@ -6,6 +6,34 @@
 
 <VBox spacing="10.0" xmlns="http://javafx.com/javafx/11.0.14-internal" xmlns:fx="http://javafx.com/fxml/1" fx:controller="org.system_false.dats_magic.DatsMagicController">
    <children>
+      <HBox layoutX="10.0" layoutY="10.0" spacing="5.0">
+         <children>
+            <Label text="Начало раунда:">
+               <font>
+                  <Font name="Arial Bold" size="14.0" />
+               </font>
+            </Label>
+            <Label fx:id="roundStartLabel">
+               <font>
+                  <Font name="Arial" size="14.0" />
+               </font>
+            </Label>
+         </children>
+      </HBox>
+      <HBox spacing="5.0">
+         <children>
+            <Label text="Конец раунда:">
+               <font>
+                  <Font name="Arial Bold" size="14.0" />
+               </font>
+            </Label>
+            <Label fx:id="roundEndLabel">
+               <font>
+                  <Font name="Arial" size="14.0" />
+               </font>
+            </Label>
+         </children>
+      </HBox>
       <HBox layoutX="10.0" layoutY="140.0" spacing="5.0">
          <children>
             <Label text="Команда:">
