@@ -42,9 +42,7 @@ public class RequestManager {
 
     private static final ScheduledExecutorService scheduler = Executors.newSingleThreadScheduledExecutor();
     private static ScheduledFuture<?> task;
-
-    private static long rate = 1;
-    private static TimeUnit unit = TimeUnit.SECONDS;
+    private static boolean shouldStop;
 
     private RequestManager() {}
 
@@ -58,9 +56,12 @@ public class RequestManager {
 
     public static void start(long rate, TimeUnit unit) {
         if (task != null) {
-            task.cancel(false);
+            task.cancel(true);
         }
         task = scheduler.scheduleAtFixedRate(() -> {
+            if (shouldStop) {
+                stop0();
+            }
             Request request = requestReference.get();
             Consumer<Response> callback = callbackReference.get();
 
@@ -70,20 +71,25 @@ public class RequestManager {
                 try {
                     Response response = sendRequest(request);
                     callback.accept(response);
+                } catch (ErrorCodeException e) {
+                    stop();
                 } catch (Exception e) {
                     logger.log(Level.WARNING, "Failed to send request", e);
                 }
             }
         }, 0, rate, unit);
-        RequestManager.rate = rate;
-        RequestManager.unit = unit;
     }
 
     public static void stop() {
         if (task != null) {
-            task.cancel(true);
-            task = null;
+            shouldStop = true;
         }
+    }
+
+    private static void stop0() {
+        task.cancel(true);
+        task = null;
+        shouldStop = false;
     }
 
     public static synchronized void enqueueRequest(Request request, Consumer<Response> callback) {
@@ -95,6 +101,9 @@ public class RequestManager {
         URI uri = new URI(serverUrl + request.getUrl());
         logger.log(Level.FINER, "Sending request to {0} with method {1}", new String[]{uri.toASCIIString(), request.getRequestMethod()});
         HttpURLConnection con = prepareConnection(request, uri);
+//        if (con.getResponseCode() == 405 || con.getResponseCode() == 400) {
+//            throw new ErrorCodeException(405);
+//        }
         try (BufferedReader in = new BufferedReader(new InputStreamReader(con.getInputStream(), StandardCharsets.UTF_8))) {
             return new Response(gson.fromJson(in.lines().collect(Collectors.joining()), JsonObject.class));
         }

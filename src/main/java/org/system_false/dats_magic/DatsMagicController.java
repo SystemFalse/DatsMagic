@@ -20,6 +20,8 @@ import org.system_false.dats_magic.json.Round;
 import java.net.URL;
 import java.text.DateFormat;
 import java.time.ZoneId;
+import java.util.Calendar;
+import java.util.Date;
 import java.util.ResourceBundle;
 import java.util.TimeZone;
 import java.util.concurrent.Executors;
@@ -31,21 +33,12 @@ public class DatsMagicController implements Initializable {
     private final ScheduledExecutorService scheduler = Executors.newSingleThreadScheduledExecutor();
 
     @FXML private VBox  info;
+    @FXML private Label roundNameLabel;
     @FXML private Label roundStartLabel;
     @FXML private Label roundEndLabel;
+    @FXML private Label nowLabel;
     @FXML private Label nameLabel;
     @FXML private Label pointsLabel;
-    @FXML private Label attackDamageLabel;
-    @FXML private Label attackCooldownLabel;
-    @FXML private Label attackExplosionRadiusLabel;
-    @FXML private Label attackRangeLabel;
-    @FXML private Label maxAccelLabel;
-    @FXML private Label maxSpeedLabel;
-    @FXML private Label reviveTimeoutSecLabel;
-    @FXML private Label shieldCooldownMsLabel;
-    @FXML private Label shieldTimeMsLabel;
-    @FXML private Label transportRadiusLabel;
-    @FXML private Label wantedListLabel;
 
     @FXML private Slider mapScale;
     @FXML private CheckBox centerCheck;
@@ -55,29 +48,23 @@ public class DatsMagicController implements Initializable {
     private GameRoundsResponse gameRounds;
     private GamePlay game;
 
+    private int currentRound = -1;
+
     private void updateUI() {
         MoveResponse resp = game.getLastResponse();
-        Round currentRound = gameRounds.getCurrentRound();
         DateFormat dateFormat = DateFormat.getTimeInstance(DateFormat.SHORT);
-        dateFormat.setTimeZone(TimeZone.getTimeZone(ZoneId.of("Europe/Kaliningrad")));
-        roundStartLabel.setText(dateFormat.format(currentRound.getStartAt()));
-        roundEndLabel.setText(dateFormat.format(currentRound.getEndAt()));
+        if (this.currentRound != -1) {
+            Round currentRound = gameRounds.getRounds().get(this.currentRound);
+            roundNameLabel.setText(currentRound.getName());
+            roundStartLabel.setText(dateFormat.format(currentRound.getStartAt()));
+            roundEndLabel.setText(dateFormat.format(currentRound.getEndAt()));
+        }
+        nowLabel.setText(dateFormat.format(gameRounds.getNow()));
         if (resp == null) {
             return;
         }
         nameLabel.setText(resp.getName());
         pointsLabel.setText(String.valueOf(resp.getPoints()));
-        attackDamageLabel.setText(String.valueOf(resp.getAttackDamage()));
-        attackCooldownLabel.setText(String.valueOf(resp.getAttackCooldownMs()));
-        attackExplosionRadiusLabel.setText(String.valueOf(resp.getAttackExplosionRadius()));
-        attackRangeLabel.setText(String.valueOf(resp.getAttackRange()));
-        maxAccelLabel.setText(String.valueOf(resp.getMaxAccel()));
-        maxSpeedLabel.setText(String.valueOf(resp.getMaxSpeed()));
-        reviveTimeoutSecLabel.setText(String.valueOf(resp.getReviveTimeoutSec()));
-        shieldCooldownMsLabel.setText(String.valueOf(resp.getShieldCooldownMs()));
-        shieldTimeMsLabel.setText(String.valueOf(resp.getShieldTimeMs()));
-        transportRadiusLabel.setText(String.valueOf(resp.getTransportRadius()));
-        wantedListLabel.setText(String.valueOf(resp.getWantedList().size()));
     }
 
     public Dimension2D getMinSize() {
@@ -87,8 +74,11 @@ public class DatsMagicController implements Initializable {
     @Override
     public void initialize(URL url, ResourceBundle resourceBundle) {
         game = new GamePlay(map);
-        game.getDraw().getScaleProperty().bind(mapScale.valueProperty().subtract(mapScale.minProperty())
-                .divide(mapScale.maxProperty().subtract(mapScale.minProperty())));
+        mapScale.setOnMouseReleased(_ -> {
+            game.getDraw().getScaleProperty().set((mapScale.getValue() - mapScale.getMin()) / (mapScale.getMax() - mapScale.getMin()));
+        });
+//        game.getDraw().getScaleProperty().bind(mapScale.valueProperty().subtract(mapScale.minProperty())
+//                .divide(mapScale.maxProperty().subtract(mapScale.minProperty())));
         game.getDraw().getCenterProperty().bind(centerCheck.selectedProperty());
         RequestManager.enqueueRequest(GamePlay.EMPTY_REQUEST, game);
         Request gameRequest = new Request("rounds/magcarp", "GET", false, null);
@@ -98,6 +88,7 @@ public class DatsMagicController implements Initializable {
                 response = RequestManager.sendRequest(gameRequest);
             } catch (Exception e) {
                 RequestManager.logger.log(Level.WARNING, "Failed to send request", e);
+                RequestManager.enqueueRequest(GamePlay.EMPTY_REQUEST, game);
                 return;
             }
             JsonElement body = response.getBody();
@@ -105,9 +96,31 @@ public class DatsMagicController implements Initializable {
             if (root.has("error")) {
                 RequestManager.logger.log(Level.WARNING, "Error {0}: {1}",
                         new String[]{root.get("errCode").getAsString(), root.get("error").getAsString()});
+                RequestManager.enqueueRequest(GamePlay.EMPTY_REQUEST, game);
                 return;
             }
             gameRounds = RequestManager.gson.fromJson(root, GameRoundsResponse.class);
+            final int roundCount = gameRounds.getRounds().size();
+            boolean roundSet = false;
+            for (int i = roundCount - 1; i >= 0; i--) {
+                Round round = gameRounds.getRounds().get(i);
+                Calendar calendar = Calendar.getInstance();
+                calendar.setTime(gameRounds.getNow());
+                calendar.add(Calendar.HOUR, -1);
+                Date now = calendar.getTime();
+                if (round.getStartAt().after(now) && now.before(round.getEndAt())) {
+                    if (currentRound != i) {
+                        RequestManager.start(1, TimeUnit.SECONDS);
+                        RequestManager.enqueueRequest(GamePlay.EMPTY_REQUEST, game);
+                    }
+                    currentRound = i;
+                    roundSet = true;
+                    break;
+                }
+            }
+            if (!roundSet) {
+                RequestManager.stop();
+            }
             Platform.runLater(this::updateUI);
         }, 0, 1, TimeUnit.SECONDS);
         RequestManager.start(1, TimeUnit.SECONDS);

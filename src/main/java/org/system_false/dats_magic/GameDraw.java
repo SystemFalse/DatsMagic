@@ -13,7 +13,7 @@ import java.util.List;
 
 public class GameDraw {
     private final Canvas map;
-    private final SimpleDoubleProperty scale = new SimpleDoubleProperty(1D);
+    private final SimpleDoubleProperty scale = new SimpleDoubleProperty(0.14);
     private final SimpleBooleanProperty center = new SimpleBooleanProperty(false);
 
     public GameDraw(Canvas map) {
@@ -36,18 +36,19 @@ public class GameDraw {
         } else {
             scale = 1D;
         }
+        map.setWidth(data.getMapSize().getX() * scale);
+        map.setHeight(data.getMapSize().getY() * scale);
         var g = map.getGraphicsContext2D();
         //очистка карты
         g.clearRect(0, 0, map.getWidth(), map.getHeight());
 
         //отрисовка границ игрового поля
-        Point2D mapSize = data.getMapSize();
         g.setStroke(Color.BLACK);
         g.setLineWidth(5);
         g.moveTo(0, 0);
-        g.lineTo(mapSize.getX() * scale, 0);
-        g.lineTo(mapSize.getX() * scale, mapSize.getY() * scale);
-        g.lineTo(0, mapSize.getY() * scale);
+        g.lineTo(map.getWidth(), 0);
+        g.lineTo(map.getWidth(), map.getHeight());
+        g.lineTo(0, map.getHeight());
         g.lineTo(0, 0);
         g.stroke();
 
@@ -55,7 +56,7 @@ public class GameDraw {
         List<Anomaly> anomalies = data.getAnomalies();
         for (Anomaly anomaly : anomalies) {
             g.setFill(anomaly.getStrength() >= 0 ? Color.RED : Color.BLUE);
-            g.setGlobalAlpha(0.2);
+            g.setGlobalAlpha(0.15);
             g.fillOval((anomaly.getX() - anomaly.getEffectiveRadius()) * scale, (anomaly.getY() - anomaly.getEffectiveRadius()) * scale,
                     (2 * anomaly.getEffectiveRadius() + 1) * scale, (2 * anomaly.getEffectiveRadius() + 1) * scale);
             g.setGlobalAlpha(0.6);
@@ -65,8 +66,10 @@ public class GameDraw {
 
         //отрисовка монет
         g.setFill(Color.YELLOW);
+        final double bountyRadius = 4, bountySize = (2 * bountyRadius + 1) * scale;
         for (Bounty bounty : data.getBounties()) {
-            g.fillOval((bounty.getX() - 2) * scale, (bounty.getY() - 2) * scale, 5 * scale, 5 * scale);
+            g.fillOval((bounty.getX() - bountyRadius) * scale, (bounty.getY() - bountyRadius) * scale,
+                    bountySize, bountySize);
         }
 
         //отрисовка врагов
@@ -74,10 +77,12 @@ public class GameDraw {
         g.setLineWidth(2);
         g.setStroke(Color.BLUE.brighter());
         List<Enemy> enemies = data.getEnemies();
+        double enemyRadius = 4, enemySize = (2 * enemyRadius + 1) * scale;
         for (Enemy enemy : enemies) {
             g.setGlobalAlpha(1D);
             g.setFill(enemy.getKillBounty() >= 5 ? Color.MEDIUMVIOLETRED : Color.RED);
-            g.fillOval((enemy.getX() - 2) * scale, (enemy.getY() - 2) * scale, 5 * scale, 5 * scale);
+            g.fillOval((enemy.getX() - enemyRadius) * scale, (enemy.getY() - enemyRadius) * scale,
+                    enemySize, enemySize);
             g.setGlobalAlpha(0.4);
             g.fillOval((enemy.getX() - carpetRadius) * scale, (enemy.getY() - carpetRadius) * scale,
                     (2 * carpetRadius + 1) * scale, (2 * carpetRadius + 1) * scale);

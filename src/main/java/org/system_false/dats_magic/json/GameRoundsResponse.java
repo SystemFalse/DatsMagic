@@ -5,7 +5,7 @@ import java.util.List;
 
 public class GameRoundsResponse {
     private String gameName;
-    private String now;
+    private Date now;
     private List<Round> rounds;
 
     private GameRoundsResponse() {}
@@ -14,7 +14,7 @@ public class GameRoundsResponse {
         return gameName;
     }
 
-    public String getNow() {
+    public Date getNow() {
         return now;
     }
 
