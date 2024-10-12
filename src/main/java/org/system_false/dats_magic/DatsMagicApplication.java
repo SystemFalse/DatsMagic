@@ -23,7 +23,6 @@ public class DatsMagicApplication extends Application {
 
     public static void main(String[] args) {
         RequestManager.setToken(args[0]);
-        RequestManager.setServer(args[1]);
         launch();
     }
 }

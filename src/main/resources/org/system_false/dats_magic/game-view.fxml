@@ -9,6 +9,7 @@
    <children>
       <VBox fx:id="info" minWidth="270.0" spacing="10.0">
          <children>
+            <ComboBox fx:id="serverUrl" minWidth="270.0" onAction="#serverChoose" promptText="Сервер" />
             <HBox layoutX="10.0" layoutY="10.0" spacing="5.0">
                <children>
                   <Label text="Раунд:">
@@ -93,6 +94,20 @@
                   </Label>
                </children>
             </HBox>
+            <HBox layoutX="10.0" layoutY="140.0" spacing="5.0">
+               <children>
+                  <Label text="Корвы в игре:">
+                     <font>
+                        <Font name="Arial Bold" size="14.0" />
+                     </font>
+                  </Label>
+                  <Label fx:id="carpetsInGameLabel">
+                     <font>
+                        <Font name="Arial" size="14.0" />
+                     </font>
+                  </Label>
+               </children>
+            </HBox>
          </children>
       </VBox>
       <BorderPane>
@@ -106,12 +121,8 @@
          <bottom>
             <HBox alignment="CENTER_LEFT" spacing="5.0" BorderPane.alignment="CENTER">
                <children>
-                  <Slider fx:id="mapScale" min="1.0" minorTickCount="1" showTickMarks="true" value="10.0" />
-                  <CheckBox fx:id="centerCheck" mnemonicParsing="false" onAction="#autoCenter" text="Центрировать" textAlignment="CENTER">
-                     <font>
-                        <Font name="Arial" size="14.0" />
-                     </font>
-                  </CheckBox>
+                  <Slider fx:id="mapScale" min="1.0" minorTickCount="1" showTickMarks="true" value="6.5" />
+                  <TextField fx:id="scaleText" promptText="Масштаб" />
                </children>
             </HBox>
          </bottom></BorderPane>

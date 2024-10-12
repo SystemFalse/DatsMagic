@@ -68,6 +68,9 @@
                     <mainClass>dats_magic/org.system_false.dats_magic.DatsMagicApplication</mainClass>
                     <noHeaderFiles>true</noHeaderFiles>
                     <noManPages>true</noManPages>
+                    <launcher>DatsMagic</launcher>
+                    <jlinkZipName>DatsMagic</jlinkZipName>
+                    <jlinkImageName>DatsMagic</jlinkImageName>
                 </configuration>
             </plugin>
         </plugins>

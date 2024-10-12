@@ -4,7 +4,6 @@ import javafx.beans.property.BooleanProperty;
 import javafx.beans.property.DoubleProperty;
 import javafx.beans.property.SimpleBooleanProperty;
 import javafx.beans.property.SimpleDoubleProperty;
-import javafx.geometry.Point2D;
 import javafx.scene.canvas.Canvas;
 import javafx.scene.paint.Color;
 import org.system_false.dats_magic.json.*;
@@ -13,7 +12,7 @@ import java.util.List;
 
 public class GameDraw {
     private final Canvas map;
-    private final SimpleDoubleProperty scale = new SimpleDoubleProperty(0.14);
+    private final SimpleDoubleProperty scale = new SimpleDoubleProperty(0.065);
     private final SimpleBooleanProperty center = new SimpleBooleanProperty(false);
 
     public GameDraw(Canvas map) {
@@ -39,6 +38,7 @@ public class GameDraw {
         map.setWidth(data.getMapSize().getX() * scale);
         map.setHeight(data.getMapSize().getY() * scale);
         var g = map.getGraphicsContext2D();
+        double carpetRadius = 3, carpetSize = 7;
         //очистка карты
         g.clearRect(0, 0, map.getWidth(), map.getHeight());
 
@@ -65,30 +65,30 @@ public class GameDraw {
         }
 
         //отрисовка монет
-        g.setFill(Color.YELLOW);
-        final double bountyRadius = 4, bountySize = (2 * bountyRadius + 1) * scale;
+        g.setFill(Color.GOLD);
+        final double bountyRadius = 2, bountySize = 2 * bountyRadius + 1;
         for (Bounty bounty : data.getBounties()) {
-            g.fillOval((bounty.getX() - bountyRadius) * scale, (bounty.getY() - bountyRadius) * scale,
+            g.fillOval((bounty.getX()) * scale - bountyRadius, (bounty.getY()) * scale - bountyRadius,
                     bountySize, bountySize);
         }
 
         //отрисовка врагов
-        int carpetRadius = data.getTransportRadius();
         g.setLineWidth(2);
-        g.setStroke(Color.BLUE.brighter());
         List<Enemy> enemies = data.getEnemies();
-        double enemyRadius = 4, enemySize = (2 * enemyRadius + 1) * scale;
+        g.setGlobalAlpha(1D);
         for (Enemy enemy : enemies) {
-            g.setGlobalAlpha(1D);
             g.setFill(enemy.getKillBounty() >= 5 ? Color.MEDIUMVIOLETRED : Color.RED);
-            g.fillOval((enemy.getX() - enemyRadius) * scale, (enemy.getY() - enemyRadius) * scale,
-                    enemySize, enemySize);
-            g.setGlobalAlpha(0.4);
-            g.fillOval((enemy.getX() - carpetRadius) * scale, (enemy.getY() - carpetRadius) * scale,
-                    (2 * carpetRadius + 1) * scale, (2 * carpetRadius + 1) * scale);
+            g.fillOval(enemy.getX() * scale - carpetRadius, enemy.getY() * scale - carpetRadius,
+                    carpetSize, carpetSize);
             if (enemy.getShieldLeftMs() > 0) {
-                g.setGlobalAlpha(1D);
-                g.strokeOval((enemy.getX() - 4) * scale, (enemy.getY() - 4) * scale, 9 * scale, 9 * scale);
+                g.setStroke(Color.BLUE.brighter());
+                g.strokeOval(enemy.getX() * scale - carpetRadius, enemy.getY() * scale - carpetRadius,
+                        carpetSize, carpetSize);
+            } else {
+                g.setStroke(Color.BLACK);
+                g.setLineWidth(1);
+                g.strokeOval(enemy.getX() * scale - carpetRadius, enemy.getY() * scale - carpetRadius,
+                        carpetSize, carpetSize);
             }
         }
 
@@ -97,7 +97,8 @@ public class GameDraw {
         double attackSize = (data.getAttackRange() * 2 + 1) * scale;
         for (ResponseTransport transport : data.getTransports()) {
             g.setFill(Color.GREEN);
-            g.fillOval((transport.getX() - 2) * scale, (transport.getY() - 2) * scale, 5 * scale, 5 * scale);
+            g.fillOval(transport.getX() * scale - carpetRadius, transport.getY() * scale - carpetRadius,
+                    carpetSize, carpetSize);
             g.setStroke(Color.LIGHTGREEN);
             g.strokeOval((transport.getX() - data.getAttackRange()) * scale, (transport.getY() - data.getAttackRange()) * scale,
                     attackSize, attackSize);

@@ -62,19 +62,19 @@ public class RequestManager {
             if (shouldStop) {
                 stop0();
             }
-            Request request = requestReference.get();
-            Consumer<Response> callback = callbackReference.get();
+            Request request = requestReference.getAcquire();
+            Consumer<Response> callback = callbackReference.getAcquire();
 
             if (request != null && callback != null) {
-                requestReference.set(null);
-                callbackReference.set(null);
+                requestReference.setRelease(null);
+                callbackReference.setRelease(null);
                 try {
                     Response response = sendRequest(request);
                     callback.accept(response);
-                } catch (ErrorCodeException e) {
-                    stop();
                 } catch (Exception e) {
                     logger.log(Level.WARNING, "Failed to send request", e);
+                    requestReference.setRelease(request);
+                    callbackReference.setRelease(callback);
                 }
             }
         }, 0, rate, unit);
@@ -93,17 +93,14 @@ public class RequestManager {
     }
 
     public static synchronized void enqueueRequest(Request request, Consumer<Response> callback) {
-        requestReference.set(request);
-        callbackReference.set(callback);
+        requestReference.setRelease(request);
+        callbackReference.setRelease(callback);
     }
 
     public static Response sendRequest(Request request) throws IOException, URISyntaxException {
         URI uri = new URI(serverUrl + request.getUrl());
         logger.log(Level.FINER, "Sending request to {0} with method {1}", new String[]{uri.toASCIIString(), request.getRequestMethod()});
         HttpURLConnection con = prepareConnection(request, uri);
-//        if (con.getResponseCode() == 405 || con.getResponseCode() == 400) {
-//            throw new ErrorCodeException(405);
-//        }
         try (BufferedReader in = new BufferedReader(new InputStreamReader(con.getInputStream(), StandardCharsets.UTF_8))) {
             return new Response(gson.fromJson(in.lines().collect(Collectors.joining()), JsonObject.class));
         }

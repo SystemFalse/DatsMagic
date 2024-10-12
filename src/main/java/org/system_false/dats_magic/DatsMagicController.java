@@ -8,10 +8,7 @@ import javafx.fxml.FXML;
 import javafx.fxml.Initializable;
 import javafx.geometry.Dimension2D;
 import javafx.scene.canvas.Canvas;
-import javafx.scene.control.CheckBox;
-import javafx.scene.control.Label;
-import javafx.scene.control.ScrollPane;
-import javafx.scene.control.Slider;
+import javafx.scene.control.*;
 import javafx.scene.layout.VBox;
 import org.system_false.dats_magic.json.GameRoundsResponse;
 import org.system_false.dats_magic.json.MoveResponse;
@@ -19,29 +16,31 @@ import org.system_false.dats_magic.json.Round;
 
 import java.net.URL;
 import java.text.DateFormat;
-import java.time.ZoneId;
 import java.util.Calendar;
 import java.util.Date;
 import java.util.ResourceBundle;
-import java.util.TimeZone;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
 import java.util.logging.Level;
 
 public class DatsMagicController implements Initializable {
     private final ScheduledExecutorService scheduler = Executors.newSingleThreadScheduledExecutor();
+    private ScheduledFuture<?> task;
 
     @FXML private VBox  info;
+    @FXML private ComboBox<String> serverUrl;
     @FXML private Label roundNameLabel;
     @FXML private Label roundStartLabel;
     @FXML private Label roundEndLabel;
     @FXML private Label nowLabel;
     @FXML private Label nameLabel;
     @FXML private Label pointsLabel;
+    @FXML private Label carpetsInGameLabel;
 
     @FXML private Slider mapScale;
-    @FXML private CheckBox centerCheck;
+    @FXML private TextField scaleText;
     @FXML private ScrollPane mapView;
     @FXML private Canvas map;
 
@@ -52,7 +51,7 @@ public class DatsMagicController implements Initializable {
 
     private void updateUI() {
         MoveResponse resp = game.getLastResponse();
-        DateFormat dateFormat = DateFormat.getTimeInstance(DateFormat.SHORT);
+        DateFormat dateFormat = DateFormat.getTimeInstance(DateFormat.MEDIUM);
         if (this.currentRound != -1) {
             Round currentRound = gameRounds.getRounds().get(this.currentRound);
             roundNameLabel.setText(currentRound.getName());
@@ -65,6 +64,7 @@ public class DatsMagicController implements Initializable {
         }
         nameLabel.setText(resp.getName());
         pointsLabel.setText(String.valueOf(resp.getPoints()));
+        carpetsInGameLabel.setText(String.valueOf(resp.getTransports().stream().filter(t -> t.getHealth() > 0).count()));
     }
 
     public Dimension2D getMinSize() {
@@ -73,16 +73,34 @@ public class DatsMagicController implements Initializable {
 
     @Override
     public void initialize(URL url, ResourceBundle resourceBundle) {
+        serverUrl.getItems().addAll("https://games-test.datsteam.dev/", "https://games.datsteam.dev/");
         game = new GamePlay(map);
         mapScale.setOnMouseReleased(_ -> {
-            game.getDraw().getScaleProperty().set((mapScale.getValue() - mapScale.getMin()) / (mapScale.getMax() - mapScale.getMin()));
+            double scale = (mapScale.getValue() - mapScale.getMin()) / (mapScale.getMax() - mapScale.getMin());
+            game.getDraw().getScaleProperty().set(scale);
+            scaleText.setText(String.valueOf(scale));
         });
-//        game.getDraw().getScaleProperty().bind(mapScale.valueProperty().subtract(mapScale.minProperty())
-//                .divide(mapScale.maxProperty().subtract(mapScale.minProperty())));
-        game.getDraw().getCenterProperty().bind(centerCheck.selectedProperty());
+        scaleText.setOnAction(_ -> {
+            try {
+                double scale = Double.parseDouble(scaleText.getText());
+                mapScale.setValue(scale * (mapScale.getMax() - mapScale.getMin()) + mapScale.getMin());
+            } catch (NumberFormatException e) {
+                scaleText.setText(String.valueOf(game.getDraw().getScaleProperty().get()));
+            }
+        });
+        scaleText.setText("0.065");
+    }
+
+    @FXML
+    public void serverChoose(ActionEvent event) {
+        RequestManager.stop();
+        if (task != null) {
+            task.cancel(true);
+        }
+        RequestManager.setServer(serverUrl.getValue());
         RequestManager.enqueueRequest(GamePlay.EMPTY_REQUEST, game);
         Request gameRequest = new Request("rounds/magcarp", "GET", false, null);
-        scheduler.scheduleAtFixedRate(() -> {
+        task = scheduler.scheduleAtFixedRate(() -> {
             Response response;
             try {
                 response = RequestManager.sendRequest(gameRequest);
@@ -110,8 +128,8 @@ public class DatsMagicController implements Initializable {
                 Date now = calendar.getTime();
                 if (round.getStartAt().after(now) && now.before(round.getEndAt())) {
                     if (currentRound != i) {
-                        RequestManager.start(1, TimeUnit.SECONDS);
                         RequestManager.enqueueRequest(GamePlay.EMPTY_REQUEST, game);
+                        RequestManager.start(1, TimeUnit.SECONDS);
                     }
                     currentRound = i;
                     roundSet = true;
@@ -124,9 +142,5 @@ public class DatsMagicController implements Initializable {
             Platform.runLater(this::updateUI);
         }, 0, 1, TimeUnit.SECONDS);
         RequestManager.start(1, TimeUnit.SECONDS);
-    }
-
-    public void autoCenter(ActionEvent event) {
-        mapScale.setDisable(centerCheck.isSelected());
     }
 }

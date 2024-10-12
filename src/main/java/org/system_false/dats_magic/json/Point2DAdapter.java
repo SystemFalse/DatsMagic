@@ -13,6 +13,7 @@ public class Point2DAdapter implements JsonDeserializer<Point2D>, JsonSerializer
 
     @Override
     public JsonElement serialize(Point2D point2D, Type type, JsonSerializationContext jsonSerializationContext) {
+        if (point2D == null) return JsonNull.INSTANCE;
         JsonObject obj = new JsonObject();
         obj.addProperty("x", point2D.getX());
         obj.addProperty("y", point2D.getY());
