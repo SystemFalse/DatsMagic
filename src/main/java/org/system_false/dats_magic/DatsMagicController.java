@@ -129,7 +129,7 @@ public class DatsMagicController implements Initializable {
                 if (round.getStartAt().after(now) && now.before(round.getEndAt())) {
                     if (currentRound != i) {
                         RequestManager.enqueueRequest(GamePlay.EMPTY_REQUEST, game);
-                        RequestManager.start(400, TimeUnit.MILLISECONDS);
+                        RequestManager.start(500, TimeUnit.MILLISECONDS);
                     }
                     currentRound = i;
                     roundSet = true;
@@ -141,6 +141,6 @@ public class DatsMagicController implements Initializable {
             }
             Platform.runLater(this::updateUI);
         }, 0, 1, TimeUnit.SECONDS);
-        RequestManager.start(400, TimeUnit.MILLISECONDS);
+        RequestManager.start(500, TimeUnit.MILLISECONDS);
     }
 }

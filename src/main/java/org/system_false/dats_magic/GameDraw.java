@@ -5,10 +5,12 @@ import javafx.beans.property.DoubleProperty;
 import javafx.beans.property.SimpleBooleanProperty;
 import javafx.beans.property.SimpleDoubleProperty;
 import javafx.scene.canvas.Canvas;
+import javafx.scene.image.Image;
 import javafx.scene.paint.Color;
 import org.system_false.dats_magic.json.*;
 
 import java.util.List;
+import java.util.Objects;
 
 public class GameDraw {
     private final Canvas map;
@@ -42,7 +44,14 @@ public class GameDraw {
         //очистка карты
         g.clearRect(0, 0, map.getWidth(), map.getHeight());
 
+        //задний фон
+        g.setImageSmoothing(false);
+        g.setGlobalAlpha(0.5);
+        g.drawImage(new Image(Objects.toString(getClass().getResource("Carpet.png"))), 0, 0, map.getWidth(),
+                map.getHeight());
+
         //отрисовка границ игрового поля
+        g.setGlobalAlpha(1);
         g.setStroke(Color.BLACK);
         g.setLineWidth(5);
         g.moveTo(0, 0);
